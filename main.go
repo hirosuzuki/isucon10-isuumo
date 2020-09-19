@@ -830,21 +830,18 @@ func searchEstates(c echo.Context) error {
 		return c.NoContent(http.StatusBadRequest)
 	}
 
-	searchQuery := "SELECT * FROM estate WHERE "
-	countQuery := "SELECT COUNT(*) FROM estate WHERE "
+	searchQuery := "SELECT SQL_CALC_FOUND_ROWS * FROM estate WHERE "
 	searchCondition := strings.Join(conditions, " AND ")
 	limitOffset := " ORDER BY npopularity, id LIMIT ? OFFSET ?"
 
+	estateDbTmp, _ := mySQLConnectionDataEstate.ConnectDB()
+	defer estateDbTmp.Close()
+
 	var res EstateSearchResponse
-	err = estateDb.Get(&res.Count, countQuery+searchCondition, params...)
-	if err != nil {
-		c.Logger().Errorf("searchEstates DB execution error : %v", err)
-		return c.NoContent(http.StatusInternalServerError)
-	}
 
 	estates := []Estate{}
 	params = append(params, perPage, page*perPage)
-	err = estateDb.Select(&estates, searchQuery+searchCondition+limitOffset, params...)
+	err = estateDbTmp.Select(&estates, searchQuery+searchCondition+limitOffset, params...)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return c.JSON(http.StatusOK, EstateSearchResponse{Count: 0, Estates: []Estate{}})
@@ -854,6 +851,12 @@ func searchEstates(c echo.Context) error {
 	}
 
 	res.Estates = estates
+
+	err = estateDbTmp.Get(&res.Count, "SELECT FOUND_ROWS()")
+	if err != nil {
+		c.Logger().Errorf("searchEstates DB execution error : %v", err)
+		return c.NoContent(http.StatusInternalServerError)
+	}
 
 	return c.JSON(http.StatusOK, res)
 }
