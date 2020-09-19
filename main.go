@@ -703,6 +703,8 @@ func postEstate(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
+	lowPricedEstates = nil
+
 	return c.NoContent(http.StatusCreated)
 }
 
@@ -816,20 +818,24 @@ func searchEstates(c echo.Context) error {
 	return c.JSON(http.StatusOK, res)
 }
 
-func getLowPricedEstate(c echo.Context) error {
-	estates := make([]Estate, 0, Limit)
-	query := `SELECT * FROM estate ORDER BY rent ASC, id ASC LIMIT ?`
-	err := estateDb.Select(&estates, query, Limit)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			c.Logger().Error("getLowPricedEstate not found")
-			return c.JSON(http.StatusOK, EstateListResponse{[]Estate{}})
-		}
-		c.Logger().Errorf("getLowPricedEstate DB execution error : %v", err)
-		return c.NoContent(http.StatusInternalServerError)
-	}
+var lowPricedEstates []Estate = nil
 
-	return c.JSON(http.StatusOK, EstateListResponse{Estates: estates})
+func getLowPricedEstate(c echo.Context) error {
+	if lowPricedEstates == nil {
+		estates := make([]Estate, 0, Limit)
+		query := `SELECT * FROM estate ORDER BY rent ASC, id ASC LIMIT ?`
+		err := estateDb.Select(&estates, query, Limit)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				c.Logger().Error("getLowPricedEstate not found")
+				return c.JSON(http.StatusOK, EstateListResponse{[]Estate{}})
+			}
+			c.Logger().Errorf("getLowPricedEstate DB execution error : %v", err)
+			return c.NoContent(http.StatusInternalServerError)
+		}
+		lowPricedEstates = estates
+	}
+	return c.JSON(http.StatusOK, EstateListResponse{Estates: lowPricedEstates})
 }
 
 func searchRecommendedEstateWithChair(c echo.Context) error {
