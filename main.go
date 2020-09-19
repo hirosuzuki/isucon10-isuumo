@@ -245,8 +245,15 @@ func main() {
 	e.Debug = true
 	e.Logger.SetLevel(log.DEBUG)
 
+	echolog, echologErr := os.Create("/tmp/echo.log")
+	if echologErr != nil {
+		panic(echologErr)
+	}
+
 	// Middleware
-	e.Use(middleware.Logger())
+	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
+		Output: echolog,
+	}))
 	e.Use(middleware.Recover())
 
 	// Initialize
@@ -883,7 +890,7 @@ func searchEstateNazotte(c echo.Context) error {
 		validatedEstate := Estate{}
 
 		point := fmt.Sprintf("'POINT(%f %f)'", estate.Latitude, estate.Longitude)
-		query := fmt.Sprintf(`SELECT * FROM estate WHERE id = ? AND ST_Contains(ST_PolygonFromText(%s), ST_GeomFromText(%s))`, coordinates.coordinatesToText(), point)
+		query := fmt.Sprintf(`SELECT * FROM estate WHERE id = ? AND /* Nazotte */ ST_Contains(ST_PolygonFromText(%s), ST_GeomFromText(%s))`, coordinates.coordinatesToText(), point)
 		err = db.Get(&validatedEstate, query, estate.ID)
 		if err != nil {
 			if err == sql.ErrNoRows {
