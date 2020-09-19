@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -421,16 +420,12 @@ func postChair(c echo.Context) error {
 		return c.NoContent(http.StatusBadRequest)
 	}
 	f, err := header.Open()
-	if err != nil {
-		c.Logger().Errorf("failed to open form file: %v", err)
-		return c.NoContent(http.StatusInternalServerError)
-	}
-	defer f.Close()
-	records, err := csv.NewReader(f).ReadAll()
-	if err != nil {
-		c.Logger().Errorf("failed to read csv: %v", err)
-		return c.NoContent(http.StatusInternalServerError)
-	}
+
+	tmpFile, _ := ioutil.TempFile("/tmp/", "chair.csv-")
+	bs, _ := ioutil.ReadAll(f)
+	tmpFile.Write(bs)
+	tmpFile.Close()
+	defer os.Remove(tmpFile.Name())
 
 	tx, err := chairDb.Begin()
 	if err != nil {
@@ -438,31 +433,12 @@ func postChair(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 	defer tx.Rollback()
-	for _, row := range records {
-		rm := RecordMapper{Record: row}
-		id := rm.NextInt()
-		name := rm.NextString()
-		description := rm.NextString()
-		thumbnail := rm.NextString()
-		price := rm.NextInt()
-		height := rm.NextInt()
-		width := rm.NextInt()
-		depth := rm.NextInt()
-		color := rm.NextString()
-		features := rm.NextString()
-		kind := rm.NextString()
-		popularity := rm.NextInt()
-		stock := rm.NextInt()
-		if err := rm.Err(); err != nil {
-			c.Logger().Errorf("failed to read record: %v", err)
-			return c.NoContent(http.StatusBadRequest)
-		}
-		_, err := tx.Exec("INSERT INTO chair(id, name, description, thumbnail, price, height, width, depth, color, features, kind, popularity, stock) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)", id, name, description, thumbnail, price, height, width, depth, color, features, kind, popularity, stock)
-		if err != nil {
-			c.Logger().Errorf("failed to insert chair: %v", err)
-			return c.NoContent(http.StatusInternalServerError)
-		}
+
+	_, err = tx.Exec("LOAD DATA LOCAL INFILE '" + tmpFile.Name() + "' INTO TABLE chair FIELDS TERMINATED BY ',' ENCLOSED BY '\"' (id, name, description, thumbnail, price, height, width, depth, color, features, kind, popularity, stock)")
+	if err != nil {
+		c.Logger().Errorf("load data error: %v", err)
 	}
+
 	if err := tx.Commit(); err != nil {
 		c.Logger().Errorf("failed to commit tx: %v", err)
 		return c.NoContent(http.StatusInternalServerError)
