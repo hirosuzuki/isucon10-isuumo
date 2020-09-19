@@ -47,3 +47,5 @@ CREATE INDEX chair_npopularity_id ON chair (npopularity, id);
 
 CREATE INDEX chair_price_id ON chair (price, id);
 CREATE INDEX chair_stock ON chair (stock);
+
+CREATE INDEX estate_rent_id ON estate (rent, id);
