@@ -234,7 +234,7 @@ func getEnv(key, defaultValue string) string {
 
 //ConnectDB isuumoデータベースに接続する
 func (mc *MySQLConnectionEnv) ConnectDB() (*sqlx.DB, error) {
-	dsn := fmt.Sprintf("%v:%v@tcp(%v:%v)/%v", mc.User, mc.Password, mc.Host, mc.Port, mc.DBName)
+	dsn := fmt.Sprintf("%v:%v@tcp(%v:%v)/%v?allowAllFiles=true", mc.User, mc.Password, mc.Host, mc.Port, mc.DBName)
 	return sqlx.Open("mysql:logger", dsn)
 }
 
@@ -703,16 +703,12 @@ func postEstate(c echo.Context) error {
 		return c.NoContent(http.StatusBadRequest)
 	}
 	f, err := header.Open()
-	if err != nil {
-		c.Logger().Errorf("failed to open form file: %v", err)
-		return c.NoContent(http.StatusInternalServerError)
-	}
-	defer f.Close()
-	records, err := csv.NewReader(f).ReadAll()
-	if err != nil {
-		c.Logger().Errorf("failed to read csv: %v", err)
-		return c.NoContent(http.StatusInternalServerError)
-	}
+
+	tmpFile, _ := ioutil.TempFile("/tmp/", "estate.csv-")
+	bs, _ := ioutil.ReadAll(f)
+	tmpFile.Write(bs)
+	tmpFile.Close()
+	defer os.Remove(tmpFile.Name())
 
 	tx, err := estateDb.Begin()
 	if err != nil {
@@ -720,34 +716,17 @@ func postEstate(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 	defer tx.Rollback()
-	for _, row := range records {
-		rm := RecordMapper{Record: row}
-		id := rm.NextInt()
-		name := rm.NextString()
-		description := rm.NextString()
-		thumbnail := rm.NextString()
-		address := rm.NextString()
-		latitude := rm.NextFloat()
-		longitude := rm.NextFloat()
-		rent := rm.NextInt()
-		doorHeight := rm.NextInt()
-		doorWidth := rm.NextInt()
-		features := rm.NextString()
-		popularity := rm.NextInt()
-		if err := rm.Err(); err != nil {
-			c.Logger().Errorf("failed to read record: %v", err)
-			return c.NoContent(http.StatusBadRequest)
-		}
-		_, err := tx.Exec("INSERT INTO estate(id, name, description, thumbnail, address, latitude, longitude, rent, door_height, door_width, features, popularity) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)", id, name, description, thumbnail, address, latitude, longitude, rent, doorHeight, doorWidth, features, popularity)
-		if err != nil {
-			c.Logger().Errorf("failed to insert estate: %v", err)
-			return c.NoContent(http.StatusInternalServerError)
-		}
+
+	_, err = tx.Exec("LOAD DATA LOCAL INFILE '" + tmpFile.Name() + "' INTO TABLE estate FIELDS TERMINATED BY ',' ENCLOSED BY '\"' (id, name, description, thumbnail, address, latitude, longitude, rent, door_height, door_width, features, popularity)")
+	if err != nil {
+		c.Logger().Errorf("load data error: %v", err)
 	}
+
 	if err := tx.Commit(); err != nil {
 		c.Logger().Errorf("failed to commit tx: %v", err)
 		return c.NoContent(http.StatusInternalServerError)
 	}
+
 	return c.NoContent(http.StatusCreated)
 }
 
