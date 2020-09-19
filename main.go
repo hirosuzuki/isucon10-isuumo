@@ -578,21 +578,16 @@ func searchChairs(c echo.Context) error {
 		return c.NoContent(http.StatusBadRequest)
 	}
 
-	searchQuery := "SELECT * FROM chair WHERE "
-	countQuery := "SELECT COUNT(*) FROM chair WHERE "
+	searchQuery := "SELECT SQL_CALC_FOUND_ROWS * FROM chair WHERE "
 	searchCondition := strings.Join(conditions, " AND ")
 	limitOffset := " ORDER BY npopularity, id LIMIT ? OFFSET ?"
 
-	var res ChairSearchResponse
-	err = chairDb.Get(&res.Count, countQuery+searchCondition, params...)
-	if err != nil {
-		c.Logger().Errorf("searchChairs DB execution error : %v", err)
-		return c.NoContent(http.StatusInternalServerError)
-	}
+	chairDbTmp, _ := mySQLConnectionDataChair.ConnectDB()
+	defer chairDbTmp.Close()
 
 	chairs := []Chair{}
 	params = append(params, perPage, page*perPage)
-	err = chairDb.Select(&chairs, searchQuery+searchCondition+limitOffset, params...)
+	err = chairDbTmp.Select(&chairs, searchQuery+searchCondition+limitOffset, params...)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return c.JSON(http.StatusOK, ChairSearchResponse{Count: 0, Chairs: []Chair{}})
@@ -601,7 +596,14 @@ func searchChairs(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
+	var res ChairSearchResponse
 	res.Chairs = chairs
+
+	err = chairDbTmp.Get(&res.Count, "SELECT FOUND_ROWS()")
+	if err != nil {
+		c.Logger().Errorf("searchChairs DB execution error : %v", err)
+		return c.NoContent(http.StatusInternalServerError)
+	}
 
 	return c.JSON(http.StatusOK, res)
 }
