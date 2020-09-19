@@ -242,7 +242,7 @@ func getEnv(key, defaultValue string) string {
 //ConnectDB isuumoデータベースに接続する
 func (mc *MySQLConnectionEnv) ConnectDB() (*sqlx.DB, error) {
 	dsn := fmt.Sprintf("%v:%v@tcp(%v:%v)/%v?allowAllFiles=true", mc.User, mc.Password, mc.Host, mc.Port, mc.DBName)
-	return sqlx.Open("mysql:logger", dsn)
+	return sqlx.Open("mysql", dsn)
 }
 
 func init() {
@@ -287,7 +287,9 @@ func (e *Echox) POST(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) 
 
 func main() {
 	// Echo instance
-	e := Echox{Echo: echo.New()}
+	echoInstance := echo.New()
+	// e := Echox{Echo: echoInstance}
+	e := echoInstance
 	e.Debug = false
 	e.Logger.SetLevel(log.DEBUG)
 
@@ -350,7 +352,7 @@ func main() {
 
 func initialize(c echo.Context) error {
 
-	tracer.Start()
+	// tracer.Start()
 
 	sqlDir := filepath.Join("..", "mysql", "db")
 	paths := []string{
