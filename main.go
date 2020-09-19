@@ -434,20 +434,9 @@ func postChair(c echo.Context) error {
 	tmpFile.Close()
 	defer os.Remove(tmpFile.Name())
 
-	tx, err := chairDb.Begin()
-	if err != nil {
-		c.Logger().Errorf("failed to begin tx: %v", err)
-		return c.NoContent(http.StatusInternalServerError)
-	}
-	defer tx.Rollback()
-
-	_, err = tx.Exec("LOAD DATA LOCAL INFILE '" + tmpFile.Name() + "' INTO TABLE chair FIELDS TERMINATED BY ',' ENCLOSED BY '\"' (id, name, description, thumbnail, price, height, width, depth, color, features, kind, popularity, stock)")
+	_, err = chairDb.Exec("LOAD DATA LOCAL INFILE '" + tmpFile.Name() + "' INTO TABLE chair FIELDS TERMINATED BY ',' ENCLOSED BY '\"' (id, name, description, thumbnail, price, height, width, depth, color, features, kind, popularity, stock)")
 	if err != nil {
 		c.Logger().Errorf("load data error: %v", err)
-	}
-
-	if err := tx.Commit(); err != nil {
-		c.Logger().Errorf("failed to commit tx: %v", err)
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
@@ -658,20 +647,9 @@ func postEstate(c echo.Context) error {
 	tmpFile.Close()
 	defer os.Remove(tmpFile.Name())
 
-	tx, err := estateDb.Begin()
-	if err != nil {
-		c.Logger().Errorf("failed to begin tx: %v", err)
-		return c.NoContent(http.StatusInternalServerError)
-	}
-	defer tx.Rollback()
-
-	_, err = tx.Exec("LOAD DATA LOCAL INFILE '" + tmpFile.Name() + "' INTO TABLE estate FIELDS TERMINATED BY ',' ENCLOSED BY '\"' (id, name, description, thumbnail, address, latitude, longitude, rent, door_height, door_width, features, popularity)")
+	_, err = estateDb.Exec("LOAD DATA LOCAL INFILE '" + tmpFile.Name() + "' INTO TABLE estate FIELDS TERMINATED BY ',' ENCLOSED BY '\"' (id, name, description, thumbnail, address, latitude, longitude, rent, door_height, door_width, features, popularity)")
 	if err != nil {
 		c.Logger().Errorf("load data error: %v", err)
-	}
-
-	if err := tx.Commit(); err != nil {
-		c.Logger().Errorf("failed to commit tx: %v", err)
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
