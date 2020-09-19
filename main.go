@@ -280,7 +280,7 @@ func (e *Echox) POST(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) 
 func main() {
 	// Echo instance
 	e := Echox{Echo: echo.New()}
-	e.Debug = true
+	e.Debug = false
 	e.Logger.SetLevel(log.DEBUG)
 
 	echolog, echologErr := os.Create("/tmp/echo.log")
@@ -291,9 +291,9 @@ func main() {
 	e.Logger.SetOutput(echolog)
 
 	// Middleware
-	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
-		Output: echolog,
-	}))
+	//e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
+	//	Output: echolog,
+	//}))
 	e.Use(middleware.Recover())
 
 	// Initialize
