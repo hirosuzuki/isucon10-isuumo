@@ -9,6 +9,12 @@ load-init-files:
 	scp isu10q-a:/home/isucon/isucon10-qualify/webapp/go/main.go main.go
 	scp isu10q-a:/home/isucon/env.sh env.sh
 
+mysql-deploy:
+	ssh isu10q-b sudo tee /etc/mysql/my.cnf < my.cnf > /dev/null
+	ssh isu10q-b sudo systemctl restart mysql
+	ssh isu10q-c sudo tee /etc/mysql/my.cnf < my.cnf > /dev/null
+	ssh isu10q-c sudo systemctl restart mysql
+
 deploy:
 	go build
 	ssh isu10q-a sudo tee /etc/nginx/nginx.conf < nginx.conf > /dev/null
