@@ -23,3 +23,6 @@ deploy:
 
 import_logs:
 	sh import_logs.sh
+
+pprof:
+	go tool pprof -http="127.0.0.1:8020" logs/latest/cpu.pprof
