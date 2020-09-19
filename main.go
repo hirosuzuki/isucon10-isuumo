@@ -239,9 +239,33 @@ func init() {
 	json.Unmarshal(jsonText, &estateSearchCondition)
 }
 
+type Echox struct {
+	*echo.Echo
+}
+
+func (e *Echox) GET(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) *echo.Route {
+	hx := func(c echo.Context) error {
+		p := tracer.WebRouteMeasure("", "GET "+path)
+		err := h(c)
+		p.End()
+		return err
+	}
+	return e.Echo.GET(path, hx, m...)
+}
+
+func (e *Echox) POST(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) *echo.Route {
+	hx := func(c echo.Context) error {
+		p := tracer.WebRouteMeasure("", "POST "+path)
+		err := h(c)
+		p.End()
+		return err
+	}
+	return e.Echo.POST(path, hx, m...)
+}
+
 func main() {
 	// Echo instance
-	e := echo.New()
+	e := Echox{Echo: echo.New()}
 	e.Debug = true
 	e.Logger.SetLevel(log.DEBUG)
 
