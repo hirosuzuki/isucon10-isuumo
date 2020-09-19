@@ -20,3 +20,6 @@ deploy:
 	scp env.sh isu10q-a:/home/isucon/env.sh
 	scp 0_Schema.sql isu10q-a:/home/isucon/isuumo/webapp/mysql/db/0_Schema.sql
 	ssh isu10q-a sudo systemctl start isuumo.go.service
+
+import_logs:
+	sh import_logs.sh
