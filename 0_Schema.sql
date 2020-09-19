@@ -65,3 +65,12 @@ CREATE INDEX estate_door_height_x ON estate (door_height_x);
 CREATE INDEX estate_whr_x ON estate (door_width_x, door_height_x, rent_x);
 CREATE INDEX estate_wr_x ON estate (door_width_x, rent_x);
 CREATE INDEX estate_hr_x ON estate (door_height_x, rent_x);
+
+ALTER TABLE chair ADD price_x INTEGER AS (CASE WHEN price < 3000 THEN 0 WHEN price < 6000 THEN 1 WHEN price < 9000 THEN 2 WHEN price < 12000 THEN 3 WHEN price < 15000 THEN 4 ELSE 5 END) STORED NOT NULL;
+CREATE INDEX char_price_x ON chair (price_x);
+ALTER TABLE chair ADD width_x INTEGER AS (CASE WHEN width < 80 THEN 0 WHEN width < 110 THEN 1 WHEN width < 150 THEN 2 ELSE 3 END) STORED NOT NULL;
+CREATE INDEX chair_width_x ON chair (width_x);
+ALTER TABLE chair ADD height_x INTEGER AS (CASE WHEN height < 80 THEN 0 WHEN height < 110 THEN 1 WHEN height < 150 THEN 2 ELSE 3 END) STORED NOT NULL;
+CREATE INDEX chair_height_x ON chair (height_x);
+ALTER TABLE chair ADD depth_x INTEGER AS (CASE WHEN depth < 80 THEN 0 WHEN depth < 110 THEN 1 WHEN depth < 150 THEN 2 ELSE 3 END) STORED NOT NULL;
+CREATE INDEX chair_depth_x ON chair (depth_x);
