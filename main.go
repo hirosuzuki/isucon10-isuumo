@@ -922,7 +922,7 @@ func postEstateRequestDocument(c echo.Context) error {
 	}
 
 	estate := Estate{}
-	query := `SELECT * FROM estate WHERE id = ?`
+	query := `SELECT id FROM estate WHERE id = ?`
 	err = estateDb.Get(&estate, query, id)
 	if err != nil {
 		if err == sql.ErrNoRows {
