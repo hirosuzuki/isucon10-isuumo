@@ -36,3 +36,11 @@ CREATE TABLE isuumo.chair
     popularity  INTEGER         NOT NULL,
     stock       INTEGER         NOT NULL
 );
+
+use isuumo;
+
+ALTER TABLE estate ADD npopularity INTEGER AS (-popularity);
+CREATE INDEX estate_npopularity_id ON estate (npopularity, id);
+
+ALTER TABLE chair ADD npopularity INTEGER AS (-popularity);
+CREATE INDEX chair_npopularity_id ON chair (npopularity, id);
