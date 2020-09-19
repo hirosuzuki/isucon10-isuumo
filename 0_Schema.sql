@@ -44,3 +44,6 @@ CREATE INDEX estate_npopularity_id ON estate (npopularity, id);
 
 ALTER TABLE chair ADD npopularity INTEGER AS (-popularity);
 CREATE INDEX chair_npopularity_id ON chair (npopularity, id);
+
+CREATE INDEX chair_price_id ON chair (price, id);
+CREATE INDEX chair_stock ON chair (stock);
