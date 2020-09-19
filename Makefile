@@ -1,3 +1,6 @@
+build:
+	go build
+
 load-init-files:
 	scp isu10q-a:/etc/nginx/nginx.conf nginx.conf
 	scp isu10q-a:/home/isucon/isuumo/webapp/mysql/db/0_Schema.sql 0_Schema.sql
@@ -7,6 +10,7 @@ load-init-files:
 	scp isu10q-a:/home/isucon/env.sh env.sh
 
 deploy:
+	go build
 	ssh isu10q-a sudo tee /etc/nginx/nginx.conf < nginx.conf > /dev/null
 	ssh isu10q-a sudo systemctl restart nginx
 	ssh isu10q-a sudo systemctl stop isuumo.go.service
