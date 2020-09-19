@@ -61,3 +61,7 @@ ALTER TABLE estate ADD door_height_x INTEGER AS (CASE WHEN door_height < 80 THEN
 CREATE INDEX estate_rent_x ON estate (rent_x);
 CREATE INDEX estate_door_width_x ON estate (door_width_x);
 CREATE INDEX estate_door_height_x ON estate (door_height_x);
+
+CREATE INDEX estate_whr_x ON estate (door_width_x, door_height_x, rent_x);
+CREATE INDEX estate_wr_x ON estate (door_width_x, rent_x);
+CREATE INDEX estate_hr_x ON estate (door_height_x, rent_x);
