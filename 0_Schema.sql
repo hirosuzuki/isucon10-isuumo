@@ -49,3 +49,8 @@ CREATE INDEX chair_price_id ON chair (price, id);
 CREATE INDEX chair_stock ON chair (stock);
 
 CREATE INDEX estate_rent_id ON estate (rent, id);
+
+ALTER TABLE estate ADD pt POINT AS (POINT(latitude, longitude)) STORED NOT NULL;
+CREATE SPATIAL INDEX estate_pt ON estate (pt);
+CREATE INDEX estate_latitude ON estate (latitude);
+CREATE INDEX estate_longitude ON estate (longitude);

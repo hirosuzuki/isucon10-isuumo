@@ -74,6 +74,7 @@ type Estate struct {
 	Features    string  `db:"features" json:"features"`
 	Popularity  int64   `db:"popularity" json:"-"`
 	NPopularity int64   `db:"npopularity" json:"-"`
+	Pt          []byte  `db:"pt" json:"-"`
 }
 
 //EstateSearchResponse estate/searchへのレスポンスの形式
@@ -275,6 +276,8 @@ func main() {
 	if echologErr != nil {
 		panic(echologErr)
 	}
+
+	e.Logger.SetOutput(echolog)
 
 	// Middleware
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
@@ -903,12 +906,13 @@ func searchEstateNazotte(c echo.Context) error {
 
 	estatesInPolygon := []Estate{}
 	query := `SELECT * FROM estate WHERE latitude <= ? AND latitude >= ? AND longitude <= ? AND longitude >= ? AND /* Nazotte */ ST_Contains(ST_PolygonFromText(` +
-		coordinates.coordinatesToText() + `), POINT(latitude, longitude)) ORDER BY npopularity, id LIMIT ?`
+		coordinates.coordinatesToText() + `), pt) ORDER BY npopularity, id LIMIT ?`
 	err = db.Select(&estatesInPolygon, query, b.BottomRightCorner.Latitude, b.TopLeftCorner.Latitude, b.BottomRightCorner.Longitude, b.TopLeftCorner.Longitude, NazotteLimit)
 	if err == sql.ErrNoRows {
 		c.Echo().Logger.Infof("select * from estate where latitude ...", err)
 		return c.JSON(http.StatusOK, EstateSearchResponse{Count: 0, Estates: []Estate{}})
 	} else if err != nil {
+		c.Echo().Logger.Errorf("Database execution error : %s", query)
 		c.Echo().Logger.Errorf("database execution error : %v", err)
 		return c.NoContent(http.StatusInternalServerError)
 	}
