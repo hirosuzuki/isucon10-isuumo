@@ -334,7 +334,7 @@ func main() {
 	if err != nil {
 		e.Logger.Fatalf("DB connection failed : %v", err)
 	}
-	estateDb.SetMaxOpenConns(10)
+	estateDb.SetMaxOpenConns(100)
 	defer estateDb.Close()
 
 	mySQLConnectionDataChair = NewMySQLConnectionEnvChair()
@@ -342,7 +342,7 @@ func main() {
 	if err != nil {
 		e.Logger.Fatalf("DB connection failed : %v", err)
 	}
-	chairDb.SetMaxOpenConns(10)
+	chairDb.SetMaxOpenConns(100)
 	defer chairDb.Close()
 
 	// Start server
@@ -519,12 +519,12 @@ func searchChairs(c echo.Context) error {
 	searchCondition := strings.Join(conditions, " AND ")
 	limitOffset := " ORDER BY npopularity, id LIMIT ? OFFSET ?"
 
-	chairDbTmp, _ := mySQLConnectionDataChair.ConnectDB()
-	defer chairDbTmp.Close()
+	tx := chairDb.MustBegin()
+	defer tx.Rollback()
 
 	chairs := []Chair{}
 	params = append(params, perPage, page*perPage)
-	err = chairDbTmp.Select(&chairs, searchQuery+searchCondition+limitOffset, params...)
+	err = tx.Select(&chairs, searchQuery+searchCondition+limitOffset, params...)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return c.JSON(http.StatusOK, ChairSearchResponse{Count: 0, Chairs: []Chair{}})
@@ -536,11 +536,12 @@ func searchChairs(c echo.Context) error {
 	var res ChairSearchResponse
 	res.Chairs = chairs
 
-	err = chairDbTmp.Get(&res.Count, "SELECT FOUND_ROWS()")
+	err = tx.Get(&res.Count, "SELECT FOUND_ROWS()")
 	if err != nil {
 		c.Logger().Errorf("searchChairs DB execution error : %v", err)
 		return c.NoContent(http.StatusInternalServerError)
 	}
+	tx.Commit()
 
 	return c.JSON(http.StatusOK, res)
 }
@@ -714,14 +715,14 @@ func searchEstates(c echo.Context) error {
 	searchCondition := strings.Join(conditions, " AND ")
 	limitOffset := " ORDER BY npopularity, id LIMIT ? OFFSET ?"
 
-	estateDbTmp, _ := mySQLConnectionDataEstate.ConnectDB()
-	defer estateDbTmp.Close()
+	tx := estateDb.MustBegin()
+	defer tx.Rollback()
 
 	var res EstateSearchResponse
 
 	estates := []Estate{}
 	params = append(params, perPage, page*perPage)
-	err = estateDbTmp.Select(&estates, searchQuery+searchCondition+limitOffset, params...)
+	err = tx.Select(&estates, searchQuery+searchCondition+limitOffset, params...)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return c.JSON(http.StatusOK, EstateSearchResponse{Count: 0, Estates: []Estate{}})
@@ -732,11 +733,13 @@ func searchEstates(c echo.Context) error {
 
 	res.Estates = estates
 
-	err = estateDbTmp.Get(&res.Count, "SELECT FOUND_ROWS()")
+	err = tx.Get(&res.Count, "SELECT FOUND_ROWS()")
 	if err != nil {
 		c.Logger().Errorf("searchEstates DB execution error : %v", err)
 		return c.NoContent(http.StatusInternalServerError)
 	}
+
+	tx.Commit()
 
 	return c.JSON(http.StatusOK, res)
 }
